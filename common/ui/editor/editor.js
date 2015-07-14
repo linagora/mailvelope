@@ -210,11 +210,11 @@ var mvelo = mvelo || null;
 
     var $extensionButton = $('<span/>', {
       "data-id": id,
-      "class": 'label attachmentExtension ' + extClass
+      "class": 'attachmentExtension ' + extClass
     }).append(fileExt);
 
     var $fileName = $('<span/>', {
-      "class": 'filename'
+      "class": 'attachmentFilename'
     }).append(fileNameNoExt);
 
     var fileUI = $('<div/>', {
