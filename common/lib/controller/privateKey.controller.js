@@ -76,16 +76,25 @@ define(function(require, exports, module) {
       })
       .then(function(syncResult) {
         var page = 'recoverySheet';
-        switch (that.host) {
-          case 'webde':
-            page += '.webde.html';
-            break;
-          case 'gmx':
-            page += '.gmxnet.html';
-            break;
-          default:
-            page += '.html';
+
+        /**
+         * Examble URLs
+         * http://*-webde-*.*
+         * http://*-gmx-*.*
+         * http://*.web.de
+         * http://*.gmx.*
+         * http://*.server.lan
+         **/
+
+        if (that.host.indexOf('web.de') >= 0 || that.host.indexOf('navigator.web.de') >= 0 || that.host.indexOf('server.lan') >= 0) {
+          page += '.webde.html';
         }
+        else if (that.host.indexOf('gmx') >= 0) {
+          page += '.gmxnet.html';
+        } else {
+          page += '.html';
+        }
+
         var path = 'common/ui/modal/recoverySheet/' + page;
         that.mvelo.windows.openPopup(path + '?id=' + that.id, {width: 1024, height: 550, modal: false}, function(window) {
           that.backupCodePopup = window;
