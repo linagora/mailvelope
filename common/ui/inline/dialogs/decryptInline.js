@@ -189,7 +189,7 @@ var mvelo = mvelo || null;
   function showMessageArea() {
     //$('html, body').addClass('hide_bg');
     hideSpinner();
-    $('#wrapper').addClass('fade-in');
+    $('#flex-container').addClass('fade-in');
     resizeFont();
   }
 
@@ -334,7 +334,6 @@ var mvelo = mvelo || null;
         addAttachment(msg.message.filename, msg.message.content, msg.message.mimeType, msg.message.attachmentId);
         break;
       case 'signature-verification':
-        console.log('signers', msg.signers);
         signers = msg.signers;
         setSignatureButton();
         break;

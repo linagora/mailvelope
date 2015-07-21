@@ -231,9 +231,7 @@ define(function(require, exports, module) {
 
   EditorController.prototype.decryptQuoted = function(armored) {
     var that = this;
-    var decryptTimer = this.mvelo.util.setTimeout(function() {
-      that.ports.editor.postMessage({event: 'decrypt-in-progress'});
-    }, 800);
+    var decryptTimer = null;
 
     var decryptCtrl = new DecryptController();
     this.model.readMessage(armored, this.keyringId)
@@ -241,6 +239,9 @@ define(function(require, exports, module) {
         return decryptCtrl.prepareKey(message, !that.editorPopup);
       })
       .then(function(message) {
+        decryptTimer = that.mvelo.util.setTimeout(function() {
+          that.ports.editor.postMessage({event: 'decrypt-in-progress'});
+        }, 800);
         return decryptCtrl.decryptMessage(message);
       })
       .then(function(content) {
@@ -285,6 +286,7 @@ define(function(require, exports, module) {
     var that = this;
     var port = this.ports.editorCont || this.ports.editor;
     var primaryKey = this.keyring.getById(this.keyringId).getPrimaryKey();
+    var encryptTimer = null;
 
     if (!primaryKey) {
       this.ports.editor.postMessage({
@@ -314,10 +316,21 @@ define(function(require, exports, module) {
 
     primaryKey.keyid = signKeyid;
     primaryKey.keyringId = this.keyringId;
+    primaryKey.reason = 'PWD_DIALOG_REASON_DECRYPT';
+    primaryKey.openPopup = true;
+    primaryKey.beforePasswordRequest = function() {
+      if (that.port && that.prefs.data().security.display_decrypted == that.mvelo.DISPLAY_POPUP) {
+        that.port.editor.postMessage({event: 'show-pwd-dialog', id: that.pwdControl.id});
+      }
+    };
 
     that.pwdControl = sub.factory.get('pwdDialog');
     that.pwdControl.unlockCachedKey(primaryKey)
       .then(function() {
+        encryptTimer = that.mvelo.util.setTimeout(function() {
+          that.ports.editor.postMessage({event: 'encrypt-in-progress'});
+        }, 800);
+
         return that.model.signAndEncryptMessage({
           keyIdsHex: options.keyIdsHex,
           keyringId: that.keyringId,
@@ -327,6 +340,8 @@ define(function(require, exports, module) {
       })
       .then(function(msg) {
         port.postMessage({event: 'encrypted-message', message: msg});
+        that.mvelo.util.clearTimeout(encryptTimer);
+        that.ports.editor.postMessage({event: 'encrypt-end'});
       })
       .catch(function(error) {
         console.log('signAndEncryptMessage() error', error);
@@ -342,6 +357,8 @@ define(function(require, exports, module) {
         if (that.ports.editorCont) {
           port.postMessage({event: 'error-message', error: error});
         }
+        that.mvelo.util.clearTimeout(encryptTimer);
+        that.ports.editor.postMessage({event: 'encrypt-failed'});
       });
   };
 
@@ -356,9 +373,15 @@ define(function(require, exports, module) {
     var that = this;
     var port = this.ports.editorCont || this.ports.editor;
 
+    var encryptTimer = this.mvelo.util.setTimeout(function() {
+      that.ports.editor.postMessage({event: 'encrypt-in-progress'});
+    }, 800);
+
     this.model.encryptMessage(options)
       .then(function(msg) {
         port.postMessage({event: 'encrypted-message', message: msg});
+        that.mvelo.util.clearTimeout(encryptTimer);
+        that.ports.editor.postMessage({event: 'encrypt-end'});
       })
       .catch(function(error) {
         console.log('model.encryptMessage() error', error);
@@ -366,6 +389,8 @@ define(function(require, exports, module) {
         if (that.ports.editorCont) {
           port.postMessage({event: 'error-message', error: error});
         }
+        that.mvelo.util.clearTimeout(encryptTimer);
+        that.ports.editor.postMessage({event: 'encrypt-failed'});
       });
   };
 
@@ -376,12 +401,20 @@ define(function(require, exports, module) {
   EditorController.prototype.signMessage = function(message) {
     var that = this;
 
+    var encryptTimer = this.mvelo.util.setTimeout(function() {
+      that.ports.editor.postMessage({event: 'encrypt-in-progress'});
+    }, 800);
+
     this.model.signMessage(message, this.signBuffer.key)
       .then(function(msg) {
         that.ports.editor.postMessage({event: 'signed-message', message: msg});
+        that.mvelo.util.clearTimeout(encryptTimer);
+        that.ports.editor.postMessage({event: 'encrypt-end'});
       })
       .catch(function(error) {
         console.log('model.signMessage() error', error);
+        that.mvelo.util.clearTimeout(encryptTimer);
+        that.ports.editor.postMessage({event: 'encrypt-failed'});
       });
   };
 
