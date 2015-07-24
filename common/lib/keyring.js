@@ -30,17 +30,9 @@ define(function(require, exports, module) {
 
   function init() {
     keyringAttr = getAllKeyringAttr();
-    if (keyringAttr && keyringAttr[mvelo.LOCAL_KEYRING_ID]) {
-      for (var keyringId in keyringAttr) {
-        if (keyringAttr.hasOwnProperty(keyringId)) {
-          keyringMap.set(keyringId, new Keyring(keyringId));
-        }
-      }
-    } else {
-      createKeyring(mvelo.LOCAL_KEYRING_ID);
-      // migrate primary_key attribute
-      if (prefs.data().general.primary_key) {
-        setKeyringAttr(mvelo.LOCAL_KEYRING_ID, {primary_key: prefs.data().general.primary_key});
+    for (var keyringId in keyringAttr) {
+      if (keyringAttr.hasOwnProperty(keyringId)) {
+        keyringMap.set(keyringId, new Keyring(keyringId));
       }
     }
   }
@@ -147,10 +139,7 @@ define(function(require, exports, module) {
 
   function Keyring(keyringId) {
     this.id = keyringId;
-    var localstore = null;
-    if (this.id !== mvelo.LOCAL_KEYRING_ID) {
-      localstore = new openpgp.Keyring.localstore(this.id);
-    }
+    var localstore = new openpgp.Keyring.localstore(this.id);
     this.keyring = new openpgp.Keyring(localstore);
     this.sync = new keyringSync.KeyringSync(this.id);
   }
